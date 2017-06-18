@@ -2,5 +2,5 @@
 Twitter Collector
 
 <p align="center">
-  <img src="https://afigueora14/tw_collector/src/main/resources/hw_tw.gif" height="500" width="650"/>
+  <img src="https://github.com/afigueroa14/tw_collector/blob/master/src/main/resources/hw_tw.gif" height="500" width="650"/>
 </p>
