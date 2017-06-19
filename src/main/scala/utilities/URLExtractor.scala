@@ -2,12 +2,17 @@ package utilities
 
 import java.net.URL
 
-/**
-  * Created by user on 6/14/17.
+
+/** Object URLExtractor Extracting from the String all URL
+  *
   */
 object URLExtractor {
 
 
+    /** Method  Return a List with all the URL extract from the Text
+    *
+    *  @param text Contain the Text String which will extract all the URL
+    */
     def extractUrls (text : String ) : scala.collection.mutable.Map [String,Int] = {
 
       var containedUrls =  scala.collection.mutable.Map [String,Int] ()
@@ -27,6 +32,10 @@ object URLExtractor {
       containedUrls
     }
 
+  /** Method  Return a String List with all the URL extract from the Text
+    *
+    *  @param text Contain the Text String which will extract all the URL
+    */
   def extractUrls2 (text : String ) : String = {
     val urlRegex = "((https?|ftp|gopher|telnet|file):((//)|(\\\\))+[\\w\\d:#@%/;$()~_?\\+-=\\\\\\.&]*)"
 
@@ -43,6 +52,11 @@ object URLExtractor {
     containedUrls
   }
 
+
+  /** Method  Return a String List with all the Domain extract from the Text - URL
+    *
+    *  @param text Contain the Text String which will extract all the URL
+    */
   def extractDomain (text : String ) : String = {
 
     val urlRegex = "((https?|ftp|gopher|telnet|file):((//)|(\\\\))+[\\w\\d:#@%/;$()~_?\\+-=\\\\\\.&]*)"
@@ -50,7 +64,6 @@ object URLExtractor {
     var containedUrls : String = ""
     import java.util.regex.Pattern
     val pattern = Pattern.compile(urlRegex, Pattern.CASE_INSENSITIVE)
-
     val urlMatcher = pattern.matcher(text)
 
     while (urlMatcher.find) {

@@ -2,17 +2,20 @@ package utilities
 
 import java.io.FileReader
 
-/**
-  * Created by user on 6/13/17.
-  */
 
+/** Object {Emoji Class} use for processing all aspect of the emoji
+  *
+  *  @constructor create a new emjson for extracting the emoji data
+  */
 
 object Emoji {
 
   // Emoji Store Collection
+  // Int Contain the Emoji Code
+  // String Contain the EmojiName
   private var emojiData = scala.collection.mutable.Map[Int, String]()
 
-  // Startup the Collection
+  // Constructor for the singleton object
   {
      // Load the Emoji File
      val cfgEmojiJson = getClass().getClassLoader().getResource("emoji.json")
@@ -22,11 +25,20 @@ object Emoji {
 
   }
 
+
+  /** Method  Get the Emoji Name from the Emoji Code (Unicode)
+    *
+    *  @param codePoint Codepoint for the emoji
+    */
    def get(codePoint: Int): Option[String] = {
     if (emojiData.contains(codePoint)) emojiData.get(codePoint)
     else None
   }
 
+  /** Method  Get the Emoji Name from the Emoji Char
+    *
+    *  @param item Codepoint for the emoji in char
+    */
    def get (item : Char ) : String = {
     val rst = get(item.toString.codePointAt(0) ) match {
       case Some(name) => "&" + name.replace (" ", "-").trim
@@ -38,6 +50,10 @@ object Emoji {
   }
 
 
+  /** Method  For a String Create a List of all Emoji Names
+    *
+    *  @param str String with all Emoji Names
+    */
   def emcodes (str : String) : Seq [String] = for {
     item <- str
     name = get(item)
@@ -45,6 +61,10 @@ object Emoji {
   } yield name
 
 
+  /** Method  For a String Create a String of all Emoji Names
+    *
+    *  @param data String with all Emoji Names
+    */
   def encodesv2 (data : String) : String = {
       var aemoji = ""
       for (item <- data) {
@@ -56,9 +76,10 @@ object Emoji {
       aemoji
   }
 
-  //-------------------------------------------------------------------------------------------------------------------
-  // Load the Emoji Json File
-  //-------------------------------------------------------------------------------------------------------------------
+  /** Method  For Loading the EMOJI JSON and Create a MAP with the Code,Name
+    *
+    *  @param fileName File which contain all the Emoji in JSON
+    */
   def load (fileName : String) : Unit = {
 
     import com.google.gson.Gson
@@ -75,7 +96,6 @@ object Emoji {
         // Add to the map
         emojiData += (Integer.parseInt(item.unified, 16) -> item.name)
       }
-
 
     } catch {
       case e: Exception => e.printStackTrace

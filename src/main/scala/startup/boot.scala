@@ -13,12 +13,14 @@ import twitter4j.auth.AuthorizationFactory
 import twitter4j.conf.ConfigurationBuilder
 import utilities.Emoji
 import utilities.URLExtractor._
-/**
-  * Created by user on 6/14/17.
+
+
+/** Singleton Application Object Twitter Collector Application. Entry Point for the applicaiton
+  *
+  *  @author angel Figueroa Cruz
+  *  @version 0.0.1
+  *  @constructor
   */
-
-
-
 object boot extends App  with SignalHandler {
 
 
@@ -106,7 +108,7 @@ object boot extends App  with SignalHandler {
   // Total Tweets
   //--------------------------------------------------------------------------------------------------------------------
   englishTweets.foreachRDD(rdd => {
-      StoreTotal ("TW",rdd.count())
+      StoreTotal ("TW",rdd.count())   // Store the Total TWitter
       StoreTotal ("TI",SCCTFactor)
   })
 
@@ -281,9 +283,10 @@ object boot extends App  with SignalHandler {
   streamingContext.awaitTermination() // Wait for the computation to terminate
 
 
-  //--------------------------------------------------------------------------------------------------------------------
-  // Method for Handling the Operating Signal - shutdown
-  //--------------------------------------------------------------------------------------------------------------------
+  /**  Method for Handling the Operating Signal - shutdown
+    *
+    *  @param signal the Signal which will recives when rquest to shutdown the system
+    */
   override def handle(signal: Signal): Unit = {
 
     logger.info(s"Shutdown Twitter Collector...")
@@ -292,9 +295,11 @@ object boot extends App  with SignalHandler {
   }
 
 
-  //--------------------------------------------------------------------------------------------------------------------
-  // Store the Totals
-  //--------------------------------------------------------------------------------------------------------------------
+  /** Method  allows to Store the information on the Ignite Total Map
+    *
+    *  @param key the Ignite Data Key
+    *  @param total the value , which contain the total
+    */
   def StoreTotal (key : String , total  : Long ) : Unit = {
 
     try
@@ -311,6 +316,12 @@ object boot extends App  with SignalHandler {
   }
 
 
+
+  /** Method  allows to Store the information on the Ignite Map
+    *
+    *  @param igine the Ignite Data Set
+    *  @param item the Item from the map that contain the information
+    */
   def Store (igine : IgniteCache [String,Long] , item : (Int,String) ) : Long = {
 
     var total : Long = 0l

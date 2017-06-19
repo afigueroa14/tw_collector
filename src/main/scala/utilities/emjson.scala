@@ -1,7 +1,10 @@
 package utilities
 
-/**
-  * Created by user on 6/13/17.
+
+
+/** Case Class emjson {emjson Class} will be use a template to Extract Corresponding information from the EMOJI Json File
+  *
+  *  @constructor create a new emjson for extracting the emoji data
   */
 class emjson {
   var name : String = null
