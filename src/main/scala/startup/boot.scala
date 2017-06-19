@@ -112,168 +112,202 @@ object boot extends App  with SignalHandler {
       StoreTotal ("TI",SCCTFactor)
   })
 
-
-
   //--------------------------------------------------------------------------------------------------------------------
-  // Get the HashTags
+  // allows to separate which component to obtain data from the Twitter Stream
   //--------------------------------------------------------------------------------------------------------------------
-  val HashTagIgnite      = ignite.getOrCreateCache [String,Long] ("hashTag")
-  val hashTagStream      = englishTweets.map(status => status.getText()).flatMap(status => status.split(" ")).filter(word => word.startsWith("#"))
-  val topCounts60        = hashTagStream.map((_, 1)).reduceByKeyAndWindow(_ + _, Seconds(SCCTFactor)).map{case (topic, count) => (count, topic)}.transform(_.sortByKey(false))
+  if (props.getBoolean("app.track.hashTag")) {
+
+    //--------------------------------------------------------------------------------------------------------------------
+    // Get the HashTags
+    //--------------------------------------------------------------------------------------------------------------------
+    val HashTagIgnite      = ignite.getOrCreateCache [String,Long] ("hashTag")
+    val hashTagStream      = englishTweets.map(status => status.getText()).flatMap(status => status.split(" ")).filter(word => word.startsWith("#"))
+    val topCounts60        = hashTagStream.map((_, 1)).reduceByKeyAndWindow(_ + _, Seconds(SCCTFactor)).map{case (topic, count) => (count, topic)}.transform(_.sortByKey(false))
 
 
 
-  //--------------------------------------------------------------------------------------------------------------------
-  // If one to Store on File
-  //--------------------------------------------------------------------------------------------------------------------
-  if (props.getBoolean("app.file.hashTag.save")) {
-    topCounts60.saveAsTextFiles(props.getString("app.file.hashTag.filename"),props.getString("app.file.hashTag.fileext"))
-  }
+    //--------------------------------------------------------------------------------------------------------------------
+    // If one to Store on File
+    //--------------------------------------------------------------------------------------------------------------------
+    if (props.getBoolean("app.file.hashTag.save")) {
+      topCounts60.saveAsTextFiles(props.getString("app.file.hashTag.filename"),props.getString("app.file.hashTag.fileext"))
+    }
 
-  //--------------------------------------------------------------------------------------------------------------------
-  // Generate the HashTag into the Igine in order the REST Service can obtain the information to the customer
-  //--------------------------------------------------------------------------------------------------------------------
-  topCounts60.foreachRDD(rdd => {
+    //--------------------------------------------------------------------------------------------------------------------
+    // Generate the HashTag into the Igine in order the REST Service can obtain the information to the customer
+    //--------------------------------------------------------------------------------------------------------------------
+    topCounts60.foreachRDD(rdd => {
 
-    val topList = rdd.take (1000) // Ordered(1000)( Ordering[(Int,String)])
-    var total : Long = 0l
-    topList.foreach (item => {total = Store (HashTagIgnite,item)})
-
-    //------------------------------------------------------------------------------------------------------------------
-    // Push the information to the cache.
-    //------------------------------------------------------------------------------------------------------------------
-    StoreTotal ("HTAG", total)
-
-
-  })
-
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // Extract all te Emoji from the Tweeter Text
-  //--------------------------------------------------------------------------------------------------------------------
-  val EmojiTopIgnite            = ignite.getOrCreateCache [String,Long] ("emojiTop")
-  val emojiStream               = englishTweets.map (str => Emoji.encodesv2(str.getText)).flatMap(status => status.split(" "))
-  val emojiCounts60             = emojiStream.map((_, 1)).reduceByKeyAndWindow(_ + _, Seconds(SCCTFactor)).map{case (topic, count) => (count, topic)}.transform(_.sortByKey(false))
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // If one to Store on File
-  //--------------------------------------------------------------------------------------------------------------------
-  if (props.getBoolean("app.file.emoji.save")) {
-    emojiCounts60.saveAsTextFiles(props.getString("app.file.emoji.filename"),props.getString("app.file.emoji.fileext"))
-  }
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // Generate the HashTag into the Igine in order the REST Service can obtain the information to the customer
-  //--------------------------------------------------------------------------------------------------------------------
-  emojiCounts60.foreachRDD(rdd => {
-    val topList = rdd.take (1000) // rdd.takeOrdered(100)( Ordering[(Int,String)])
-    var total : Long = 0l
-
-    topList.foreach (item => {total = Store (EmojiTopIgnite,item)})
-
-    //------------------------------------------------------------------------------------------------------------------
-    // Push the information to the cache.
-    //------------------------------------------------------------------------------------------------------------------
-    StoreTotal ("EMOJI", total)
-
-  })
-
-
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // Get the HashTags
-  //--------------------------------------------------------------------------------------------------------------------
-  val URLTopIgnite                 = ignite.getOrCreateCache [String,Long] ("URLTop")
-  val URLinTW                      = englishTweets.map(status  => extractUrls2 (status.getText)).flatMap(status => status.split(" ")).filter(word => word.startsWith("https"))
-  val URLinTWCounts60              = URLinTW.map((_, 1)).reduceByKeyAndWindow(_ + _, Seconds(SCCTFactor)).map{case (topic, count) => (count, topic)}.transform(_.sortByKey(false))
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // If one to Store on File
-  //--------------------------------------------------------------------------------------------------------------------
-  if (props.getBoolean("app.file.url.save")) {
-    URLinTWCounts60.saveAsTextFiles(props.getString("app.file.url.filename"),props.getString("app.file.url.fileext"))
-  }
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // Generate the HashTag into the Igine in order the REST Service can obtain the information to the customer
-  //--------------------------------------------------------------------------------------------------------------------
-  URLinTWCounts60.foreachRDD(rdd => {
-    val topList = rdd.take (1000) // rdd.takeOrdered(100)( Ordering[(Int,String)])
-
-    var total : Long = 0l
-    topList.foreach (item => {total = Store (URLTopIgnite,item)})
-
-    //------------------------------------------------------------------------------------------------------------------
-    // Push the information to the cache.
-    //------------------------------------------------------------------------------------------------------------------
-    StoreTotal ("URL", total)
-
-  })
-
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // Domains
-  //--------------------------------------------------------------------------------------------------------------------
-  val DomainTopIgnite       = ignite.getOrCreateCache [String,Long] ("DomainTop")
-  val DomainTW              = englishTweets.map(status  => extractDomain (status.getText)).flatMap(status => status.split(" "))
-  val DomainTWCounts60      = DomainTW.map((_, 1)).reduceByKeyAndWindow(_ + _, Seconds(SCCTFactor)).map{case (topic, count) => (count, topic)}.transform(_.sortByKey(false))
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // If one to Store on File
-  //--------------------------------------------------------------------------------------------------------------------
-  if (props.getBoolean("app.file.domain.save")) {
-    DomainTWCounts60.saveAsTextFiles(props.getString("app.file.domain.filename"), props.getString("app.file.domain.fileext"))
-  }
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // Generate the HashTag into the Igine in order the REST Service can obtain the information to the customer
-  //--------------------------------------------------------------------------------------------------------------------
-    DomainTWCounts60.foreachRDD(rdd => {
-
-      val topList = rdd.take (1000) // rdd.takeOrdered(100)( Ordering[(Int,String)])
-
+      val topList = rdd.take (1000) // Ordered(1000)( Ordering[(Int,String)])
       var total : Long = 0l
-      topList.foreach (item => {total = Store (DomainTopIgnite,item)})
+      topList.foreach (item => {total = Store (HashTagIgnite,item)})
 
       //------------------------------------------------------------------------------------------------------------------
       // Push the information to the cache.
       //------------------------------------------------------------------------------------------------------------------
-      StoreTotal ("DOMAIN", total)
+      StoreTotal ("HTAG", total)
 
 
-  })
+    })
 
 
-  //--------------------------------------------------------------------------------------------------------------------
-  // Picture
-  //--------------------------------------------------------------------------------------------------------------------
-  val PhotoIgnite       = ignite.getOrCreateCache [String,Long] ("PhotoTag")
-  val PhotoTW           = englishTweets.map(status  => extractDomain (status.getText)).flatMap(status => status.split(" ")).filter(word => (word.contains("instagram") || word.contains("pic.twitter.com")))
-  val PhotoTWCounts60  = PhotoTW.map((_, 1)).reduceByKeyAndWindow(_ + _, Seconds(SCCTFactor)).map{case (topic, count) => (count, topic)}.transform(_.sortByKey(false))
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // If one to Store on File
-  //--------------------------------------------------------------------------------------------------------------------
-  if (props.getBoolean("app.file.photo.save")) {
-    PhotoTWCounts60.saveAsTextFiles(props.getString("app.file.photo.filename"), props.getString("app.file.photo.fileext"))
   }
 
   //--------------------------------------------------------------------------------------------------------------------
-  // Generate the HashTag into the Igine in order the REST Service can obtain the information to the customer
+  // allows to separate which component to obtain data from the Twitter Stream
   //--------------------------------------------------------------------------------------------------------------------
-  PhotoTWCounts60.foreachRDD(rdd => {
-    val topList = rdd.take (1000) // rdd.takeOrdered(100)( Ordering[(Int,String)])
+  if (props.getBoolean("app.track.emoji")) {
 
-    var total : Long = 0l
-    topList.foreach (item => {total = Store (PhotoIgnite,item)})
+    //--------------------------------------------------------------------------------------------------------------------
+    // Extract all te Emoji from the Tweeter Text
+    //--------------------------------------------------------------------------------------------------------------------
+    val EmojiTopIgnite = ignite.getOrCreateCache[String, Long]("emojiTop")
+    val emojiStream = englishTweets.map(str => Emoji.encodesv2(str.getText)).flatMap(status => status.split(" "))
+    val emojiCounts60 = emojiStream.map((_, 1)).reduceByKeyAndWindow(_ + _, Seconds(SCCTFactor)).map { case (topic, count) => (count, topic) }.transform(_.sortByKey(false))
 
-    //------------------------------------------------------------------------------------------------------------------
-    // Push the information to the cache.
-    //------------------------------------------------------------------------------------------------------------------
-    StoreTotal ("PHOTO", total)
+    //--------------------------------------------------------------------------------------------------------------------
+    // If one to Store on File
+    //--------------------------------------------------------------------------------------------------------------------
+    if (props.getBoolean("app.file.emoji.save")) {
+      emojiCounts60.saveAsTextFiles(props.getString("app.file.emoji.filename"), props.getString("app.file.emoji.fileext"))
+    }
 
-  })
+    //--------------------------------------------------------------------------------------------------------------------
+    // Generate the HashTag into the Igine in order the REST Service can obtain the information to the customer
+    //--------------------------------------------------------------------------------------------------------------------
+    emojiCounts60.foreachRDD(rdd => {
+      val topList = rdd.take(1000) // rdd.takeOrdered(100)( Ordering[(Int,String)])
+      var total: Long = 0l
 
+      topList.foreach(item => {
+        total = Store(EmojiTopIgnite, item)
+      })
+
+      //------------------------------------------------------------------------------------------------------------------
+      // Push the information to the cache.
+      //------------------------------------------------------------------------------------------------------------------
+      StoreTotal("EMOJI", total)
+
+    })
+  }
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // allows to separate which component to obtain data from the Twitter Stream
+  //--------------------------------------------------------------------------------------------------------------------
+  if (props.getBoolean("app.track.url")) {
+
+    //--------------------------------------------------------------------------------------------------------------------
+    // Get the HashTags
+    //--------------------------------------------------------------------------------------------------------------------
+    val URLTopIgnite = ignite.getOrCreateCache[String, Long]("URLTop")
+    val URLinTW = englishTweets.map(status => extractUrls2(status.getText)).flatMap(status => status.split(" ")).filter(word => word.startsWith("https"))
+    val URLinTWCounts60 = URLinTW.map((_, 1)).reduceByKeyAndWindow(_ + _, Seconds(SCCTFactor)).map { case (topic, count) => (count, topic) }.transform(_.sortByKey(false))
+
+    //--------------------------------------------------------------------------------------------------------------------
+    // If one to Store on File
+    //--------------------------------------------------------------------------------------------------------------------
+    if (props.getBoolean("app.file.url.save")) {
+      URLinTWCounts60.saveAsTextFiles(props.getString("app.file.url.filename"), props.getString("app.file.url.fileext"))
+    }
+
+    //--------------------------------------------------------------------------------------------------------------------
+    // Generate the HashTag into the Igine in order the REST Service can obtain the information to the customer
+    //--------------------------------------------------------------------------------------------------------------------
+    URLinTWCounts60.foreachRDD(rdd => {
+      val topList = rdd.take(1000) // rdd.takeOrdered(100)( Ordering[(Int,String)])
+
+      var total: Long = 0l
+      topList.foreach(item => {
+        total = Store(URLTopIgnite, item)
+      })
+
+      //------------------------------------------------------------------------------------------------------------------
+      // Push the information to the cache.
+      //------------------------------------------------------------------------------------------------------------------
+      StoreTotal("URL", total)
+
+    })
+  }
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // allows to separate which component to obtain data from the Twitter Stream
+  //--------------------------------------------------------------------------------------------------------------------
+  if (props.getBoolean("app.track.domain")) {
+
+
+    //--------------------------------------------------------------------------------------------------------------------
+    // Domains
+    //--------------------------------------------------------------------------------------------------------------------
+    val DomainTopIgnite = ignite.getOrCreateCache[String, Long]("DomainTop")
+    val DomainTW = englishTweets.map(status => extractDomain(status.getText)).flatMap(status => status.split(" "))
+    val DomainTWCounts60 = DomainTW.map((_, 1)).reduceByKeyAndWindow(_ + _, Seconds(SCCTFactor)).map { case (topic, count) => (count, topic) }.transform(_.sortByKey(false))
+
+    //--------------------------------------------------------------------------------------------------------------------
+    // If one to Store on File
+    //--------------------------------------------------------------------------------------------------------------------
+    if (props.getBoolean("app.file.domain.save")) {
+      DomainTWCounts60.saveAsTextFiles(props.getString("app.file.domain.filename"), props.getString("app.file.domain.fileext"))
+    }
+
+    //--------------------------------------------------------------------------------------------------------------------
+    // Generate the HashTag into the Igine in order the REST Service can obtain the information to the customer
+    //--------------------------------------------------------------------------------------------------------------------
+    DomainTWCounts60.foreachRDD(rdd => {
+
+      val topList = rdd.take(1000) // rdd.takeOrdered(100)( Ordering[(Int,String)])
+
+      var total: Long = 0l
+      topList.foreach(item => {
+        total = Store(DomainTopIgnite, item)
+      })
+
+      //------------------------------------------------------------------------------------------------------------------
+      // Push the information to the cache.
+      //------------------------------------------------------------------------------------------------------------------
+      StoreTotal("DOMAIN", total)
+
+
+    })
+  }
+
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // allows to separate which component to obtain data from the Twitter Stream
+  //--------------------------------------------------------------------------------------------------------------------
+  if (props.getBoolean("app.track.photo")) {
+
+    //--------------------------------------------------------------------------------------------------------------------
+    // Picture
+    //--------------------------------------------------------------------------------------------------------------------
+    val PhotoIgnite = ignite.getOrCreateCache[String, Long]("PhotoTag")
+    val PhotoTW = englishTweets.map(status => extractDomain(status.getText)).flatMap(status => status.split(" ")).filter(word => (word.contains("instagram") || word.contains("pic.twitter.com")))
+    val PhotoTWCounts60 = PhotoTW.map((_, 1)).reduceByKeyAndWindow(_ + _, Seconds(SCCTFactor)).map { case (topic, count) => (count, topic) }.transform(_.sortByKey(false))
+
+    //--------------------------------------------------------------------------------------------------------------------
+    // If one to Store on File
+    //--------------------------------------------------------------------------------------------------------------------
+    if (props.getBoolean("app.file.photo.save")) {
+      PhotoTWCounts60.saveAsTextFiles(props.getString("app.file.photo.filename"), props.getString("app.file.photo.fileext"))
+    }
+
+    //--------------------------------------------------------------------------------------------------------------------
+    // Generate the HashTag into the Igine in order the REST Service can obtain the information to the customer
+    //--------------------------------------------------------------------------------------------------------------------
+    PhotoTWCounts60.foreachRDD(rdd => {
+      val topList = rdd.take(1000) // rdd.takeOrdered(100)( Ordering[(Int,String)])
+
+      var total: Long = 0l
+      topList.foreach(item => {
+        total = Store(PhotoIgnite, item)
+      })
+
+      //------------------------------------------------------------------------------------------------------------------
+      // Push the information to the cache.
+      //------------------------------------------------------------------------------------------------------------------
+      StoreTotal("PHOTO", total)
+
+    })
+  }
 
   //--------------------------------------------------------------------------------------------------------------------
   // Start the Engine

@@ -2,6 +2,8 @@ package utilities
 
 import java.io.FileReader
 
+import org.slf4j.LoggerFactory
+
 
 /** Object {Emoji Class} use for processing all aspect of the emoji
   *
@@ -9,6 +11,11 @@ import java.io.FileReader
   */
 
 object Emoji {
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Log
+  //--------------------------------------------------------------------------------------------------------------------
+  val logger = LoggerFactory. getLogger("Emoji")
 
   // Emoji Store Collection
   // Int Contain the Emoji Code
@@ -55,10 +62,11 @@ object Emoji {
     *  @param str String with all Emoji Names
     */
   def emcodes (str : String) : Seq [String] = for {
-    item <- str
-    name = get(item)
-    if (! name.isEmpty)
-  } yield name
+        item <- str
+        name = get(item)
+        if (! name.isEmpty)
+      } yield name
+
 
 
   /** Method  For a String Create a String of all Emoji Names
@@ -67,12 +75,20 @@ object Emoji {
     */
   def encodesv2 (data : String) : String = {
       var aemoji = ""
-      for (item <- data) {
 
-        val vitem = get(item)
-        if (!vitem.isEmpty) aemoji +=  vitem + " "
+      try
+      {
+        if (data.length > 0) {
+          for (item <- data) {
+            val vitem = get(item)
+            if (!vitem.isEmpty) aemoji +=  vitem + " "
+          }
+        }
 
+      } catch {
+        case exp : Exception  => logger.error (s"Module encodesv2 Error ${exp.getMessage}")
       }
+
       aemoji
   }
 
@@ -85,6 +101,8 @@ object Emoji {
     import com.google.gson.Gson
     try {
 
+      logger.info(s"Loading Emoji File ${fileName}")
+
       var ncode : String = ""
       val gson = new Gson
       val jsonElement =  gson.fromJson(new FileReader(fileName),classOf [ Array [emjson]])
@@ -95,6 +113,9 @@ object Emoji {
 
         // Add to the map
         emojiData += (Integer.parseInt(item.unified, 16) -> item.name)
+
+        // display the emoji
+        logger.info(s"Name ${item.unified} = ${item.name}")
       }
 
     } catch {
