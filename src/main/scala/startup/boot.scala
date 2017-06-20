@@ -70,7 +70,13 @@ object boot extends App  with SignalHandler {
   //--------------------------------------------------------------------------------------------------------------------
   // Stream the Context Frequency
   //--------------------------------------------------------------------------------------------------------------------
-  val SCCTFactor = 5
+  val SCCTFactor = 1
+  //--------------------------------------------------------------------------------------------------------------------
+  // Select the No of Records
+  //--------------------------------------------------------------------------------------------------------------------
+  val noRedord = props.getInt("app.StreamSeconds")
+
+
   val streamingContext = new StreamingContext(sparkContext, Seconds(SCCTFactor))
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -107,10 +113,13 @@ object boot extends App  with SignalHandler {
   //--------------------------------------------------------------------------------------------------------------------
   // Total Tweets
   //--------------------------------------------------------------------------------------------------------------------
-  englishTweets.foreachRDD(rdd => {
-      StoreTotal ("TW",rdd.count())   // Store the Total TWitter
+  englishTweets.foreachRDD((rdd,time) => {
+
+      StoreTotal ("TW",rdd.collect().length)   // Store the Total TWitter
       StoreTotal ("TI",SCCTFactor)
+
   })
+
 
   //--------------------------------------------------------------------------------------------------------------------
   // allows to separate which component to obtain data from the Twitter Stream
@@ -138,7 +147,7 @@ object boot extends App  with SignalHandler {
     //--------------------------------------------------------------------------------------------------------------------
     topCounts60.foreachRDD(rdd => {
 
-      val topList = rdd.take (1000) // Ordered(1000)( Ordering[(Int,String)])
+      val topList =  if (noRedord == -1 ) rdd.collect() else rdd.take (noRedord)
       var total : Long = 0l
       topList.foreach (item => {total = Store (HashTagIgnite,item)})
 
@@ -176,7 +185,7 @@ object boot extends App  with SignalHandler {
     // Generate the HashTag into the Igine in order the REST Service can obtain the information to the customer
     //--------------------------------------------------------------------------------------------------------------------
     emojiCounts60.foreachRDD(rdd => {
-      val topList = rdd.take(1000) // rdd.takeOrdered(100)( Ordering[(Int,String)])
+      val topList =  if (noRedord == -1 ) rdd.collect() else rdd.take (noRedord)
       var total: Long = 0l
 
       topList.foreach(item => {
@@ -214,7 +223,7 @@ object boot extends App  with SignalHandler {
     // Generate the HashTag into the Igine in order the REST Service can obtain the information to the customer
     //--------------------------------------------------------------------------------------------------------------------
     URLinTWCounts60.foreachRDD(rdd => {
-      val topList = rdd.take(1000) // rdd.takeOrdered(100)( Ordering[(Int,String)])
+      val topList =  if (noRedord == -1 ) rdd.collect() else rdd.take (noRedord)
 
       var total: Long = 0l
       topList.foreach(item => {
@@ -254,8 +263,7 @@ object boot extends App  with SignalHandler {
     //--------------------------------------------------------------------------------------------------------------------
     DomainTWCounts60.foreachRDD(rdd => {
 
-      val topList = rdd.take(1000) // rdd.takeOrdered(100)( Ordering[(Int,String)])
-
+      val topList =  if (noRedord == -1 ) rdd.collect() else rdd.take (noRedord)
       var total: Long = 0l
       topList.foreach(item => {
         total = Store(DomainTopIgnite, item)
@@ -294,8 +302,7 @@ object boot extends App  with SignalHandler {
     // Generate the HashTag into the Igine in order the REST Service can obtain the information to the customer
     //--------------------------------------------------------------------------------------------------------------------
     PhotoTWCounts60.foreachRDD(rdd => {
-      val topList = rdd.take(1000) // rdd.takeOrdered(100)( Ordering[(Int,String)])
-
+      val topList =  if (noRedord == -1 ) rdd.collect() else rdd.take (noRedord)
       var total: Long = 0l
       topList.foreach(item => {
         total = Store(PhotoIgnite, item)
